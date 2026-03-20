@@ -23,12 +23,6 @@ All data is stored in your browser's localStorage. Nothing is sent to any server
 - To reset everything: open browser console (`Cmd+Option+J`) and type `localStorage.clear()`
 - localStorage has a ~5-10 MB limit depending on browser — this typically fits 2-3 books
 
-## Hosting on GitHub Pages (optional)
-
-1. Push this folder to a GitHub repository
-2. Go to Settings → Pages → Source: Deploy from branch → `main` / `root`
-3. Your app will be available at `https://yourusername.github.io/readx/`
-
 ## Tech
 
 - Pure HTML, CSS, vanilla JavaScript

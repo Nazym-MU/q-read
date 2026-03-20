@@ -463,7 +463,7 @@ async function handleInitialUpload(file) {
   showView(loadingScreen);
   try {
     const { title, pages, totalPages } = await parsePDF(file, (done, total) => {
-      $('#loading-text').textContent = `Оқылғаны... ${done} / ${total} бет`;
+      $('#loading-text').textContent = `${done} / ${total} бет жүктелді`;
       $('#loading-progress').style.width = `${Math.round((done / total) * 100)}%`;
     });
 
@@ -520,7 +520,7 @@ $('#file-input-modal').addEventListener('change', async (e) => {
 
   try {
     const result = await parsePDF(file, (done, total) => {
-      dropText.textContent = `Оқылғаны... ${done} / ${total} бет`;
+      dropText.textContent = `${done} / ${total} бет жүктелді`;
     });
     pendingParsedData = result;
     dropText.textContent = `${result.totalPages} бет оқыдыңыз`;
@@ -530,7 +530,7 @@ $('#file-input-modal').addEventListener('change', async (e) => {
     $('#modal-save').style.display = '';
   } catch (err) {
     console.error('PDF parsing failed:', err);
-    dropText.textContent = 'Қате. Қайта таңдаңыз.';
+    dropText.textContent = 'Қате. Қайтадан таңдап көріңіз.';
   }
 });
 
