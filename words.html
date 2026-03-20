@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="kk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Сөздік — ReadX</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500&family=Noto+Serif:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <div class="words-header">
+    <h1>Сөз тіркестері</h1>
+    <a href="index.html">← Кітапхана</a>
+  </div>
+
+  <div class="words-count" id="phrases-count"></div>
+
+  <div class="words-filter" id="phrases-filter" style="display:none;">
+    <select id="book-filter">
+      <option value="">Барлығы</option>
+    </select>
+  </div>
+
+  <div id="phrases-list"></div>
+
+  <div class="empty-state" id="empty-phrases" style="display:none;">
+    Әзірге сақталған сөз тіркестері жоқ.<br>
+    Кітап оқу барысында ұнаған сөз тіркесін белгілеп осында сақтай аласыз.
+  </div>
+
+  <script src="words.js"></script>
+</body>
+</html>

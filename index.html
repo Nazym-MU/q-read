@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="kk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ReadX</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500&family=Noto+Serif:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+</head>
+<body>
+
+  <!-- Upload screen (first time) -->
+  <section id="upload-screen" class="upload-screen" style="display:none;">
+    <h1>ReadX</h1>
+    <div class="drop-zone" id="drop-zone">
+      <span class="drop-zone-text">Файлдарды осында жүктеп салыңыз</span>
+      <input type="file" accept=".pdf" id="file-input-initial">
+    </div>
+    <p class="upload-hint">Файл осы браузерде ғана сақталады</p>
+  </section>
+
+  <!-- Loading screen -->
+  <section id="loading-screen" class="loading" style="display:none;">
+    <p id="loading-text">Жүктелуде...</p>
+    <div class="progress-bar" style="max-width:300px;">
+      <div class="progress-bar-fill" id="loading-progress" style="width:0%;"></div>
+    </div>
+  </section>
+
+  <!-- Library view -->
+  <section id="library-view" style="display:none;">
+    <div class="header">
+      <div class="header-left">Кітапхана</div>
+      <div class="header-right">
+        <a href="words.html" class="phrase-count-badge" id="lib-phrase-count"></a>
+      </div>
+    </div>
+    <ul class="book-list" id="book-list"></ul>
+    <button class="add-book-btn" id="add-book-btn">+ Жаңа кітап қосу</button>
+  </section>
+
+  <!-- Reading view -->
+  <section id="reading-view" style="display:none;">
+    <div class="reading-header">
+      <button class="back-link" id="back-to-library">← Кітапхана</button>
+      <span class="reading-page-range" id="reading-page-range"></span>
+      <a href="words.html" class="phrase-count-badge" id="reading-phrase-count"></a>
+    </div>
+    <div class="reading-book-title" id="reading-book-title"></div>
+    <div class="progress-bar reading-progress-bar">
+      <div class="progress-bar-fill" id="reading-progress-fill" style="width:0%;"></div>
+    </div>
+    <div class="reading-progress-info" id="reading-progress-info"></div>
+
+    <div id="completion-screen" class="completion" style="display:none;">
+      <h2>Осы кітапты оқып бітірдіңіз!</h2>
+      <p>Құттықтаймыз!</p>
+      <button class="back-link" id="completion-back">← Кітапханаға қайту</button>
+    </div>
+
+    <div class="pages-container" id="pages-container"></div>
+
+    <div class="day-nav" id="day-nav">
+      <button id="prev-day">← Алдыңғы күн</button>
+      <span id="day-label"></span>
+      <button id="next-day">Келесі күн →</button>
+    </div>
+  </section>
+
+  <!-- Upload modal -->
+  <div class="modal-overlay" id="upload-modal" style="display:none;">
+    <div class="modal">
+      <h2>Жаңа кітап</h2>
+      <div class="drop-zone" id="modal-drop-zone">
+        <span class="drop-zone-text">PDF файлды таңдаңыз</span>
+        <input type="file" accept=".pdf" id="file-input-modal">
+      </div>
+      <div id="modal-fields" style="display:none; margin-top:1.25rem;">
+        <div class="modal-field">
+          <label>Кітап атауы</label>
+          <input type="text" id="modal-title">
+        </div>
+        <div class="modal-field">
+          <label>Күніне оқылатын бет саны</label>
+          <input type="number" id="modal-pages-per-day" value="5" min="1" max="50">
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="modal-cancel" id="modal-cancel">Болдырмау</button>
+        <button class="btn" id="modal-save" style="display:none;">Жүктеу</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
