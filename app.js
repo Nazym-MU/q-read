@@ -327,17 +327,22 @@ function removeSavePopup() {
   }
 }
 
-document.addEventListener('mouseup', (e) => {
-  setTimeout(() => handleSelection(e), 10);
+document.addEventListener('mouseup', () => {
+  setTimeout(handleSelection, 10);
 });
 
 document.addEventListener('mousedown', (e) => {
-  if (savePopup && !savePopup.contains(e.target)) {
-    removeSavePopup();
+  if (savePopup) {
+    if (savePopup.contains(e.target)) {
+      // Prevent the click inside the popup from clearing the text selection
+      e.preventDefault();
+    } else {
+      removeSavePopup();
+    }
   }
 });
 
-function handleSelection(e) {
+function handleSelection() {
   const sel = window.getSelection();
   const text = sel ? sel.toString().trim() : '';
 
