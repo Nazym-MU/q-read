@@ -643,12 +643,17 @@ function escapeHtml(str) {
 
 // ── Init ──
 async function init() {
-  await migrateFromLocalStorage();
-  const books = await loadBooks();
-  if (books.length === 0) {
+  try {
+    await migrateFromLocalStorage();
+    const books = await loadBooks();
+    if (books.length === 0) {
+      showView(uploadScreen);
+    } else {
+      renderLibrary();
+    }
+  } catch (e) {
+    console.error('Init failed:', e);
     showView(uploadScreen);
-  } else {
-    renderLibrary();
   }
 }
 

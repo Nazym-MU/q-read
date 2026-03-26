@@ -61,34 +61,24 @@ async function dbGetAllKeys() {
 
 // ── Migrate from localStorage if needed ──
 async function migrateFromLocalStorage() {
-  const migrated = await dbGet('_migrated');
-  if (migrated) return;
+  try {
+    const migrated = await dbGet('_migrated');
+    if (migrated) return;
 
-  const lsKeys = ['readx_books', 'readx_phrases', 'readx_current_book'];
-  for (const key of lsKeys) {
-    const val = localStorage.getItem(key);
-    if (val !== null) {
-      await dbPut(key, JSON.parse(val));
+    const keysToMigrate = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && k.startsWith('readx_')) keysToMigrate.push(k);
     }
-  }
 
-  // Migrate pages
-  for (let i = 0; i < localStorage.length; i++) {
-    const key = localStorage.key(i);
-    if (key && key.startsWith('readx_book_') && key.endsWith('_pages')) {
+    for (const key of keysToMigrate) {
       try {
         const val = JSON.parse(localStorage.getItem(key));
         await dbPut(key, val);
       } catch {}
     }
-  }
 
-  await dbPut('_migrated', true);
-  // Clear localStorage after migration
-  const keysToRemove = [];
-  for (let i = 0; i < localStorage.length; i++) {
-    const k = localStorage.key(i);
-    if (k && k.startsWith('readx_')) keysToRemove.push(k);
-  }
-  keysToRemove.forEach(k => localStorage.removeItem(k));
+    await dbPut('_migrated', true);
+    keysToMigrate.forEach(k => localStorage.removeItem(k));
+  } catch {}
 }
