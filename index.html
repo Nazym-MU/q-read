@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ReadX</title>
+  <title>Q-Read</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500&family=Noto+Serif:wght@400;500&display=swap" rel="stylesheet">
@@ -14,7 +14,7 @@
 
   <!-- Upload screen (first time) -->
   <section id="upload-screen" class="upload-screen" style="display:none;">
-    <h1>ReadX</h1>
+    <h1>Q-Read</h1>
     <div class="drop-zone" id="drop-zone">
       <span class="drop-zone-text">Файлдарды осында жүктеп салыңыз</span>
       <input type="file" accept=".pdf" id="file-input-initial">
@@ -36,6 +36,8 @@
       <div class="header-left">Кітапхана</div>
       <div class="header-right">
         <a href="words.html" class="phrase-count-badge" id="lib-phrase-count"></a>
+        <button class="btn-ghost" id="export-btn">Сөздікті экспорттау</button>
+        <label class="btn-ghost" style="cursor:pointer;">Сөздікті жүктеу<input type="file" accept=".json" id="import-input" style="display:none;"></label>
       </div>
     </div>
     <ul class="book-list" id="book-list"></ul>
@@ -98,6 +100,7 @@
   <!-- Toast -->
   <div class="toast" id="toast"></div>
 
+  <script src="db.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

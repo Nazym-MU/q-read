@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="kk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Флэшкарталар — Q-Read</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500&family=Noto+Serif:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <div class="words-header">
+    <h1>Флэшкарталар</h1>
+    <a href="words.html">← Сөздік</a>
+  </div>
+
+  <div class="words-filter" id="phrases-filter" style="display:none;">
+    <select id="book-filter">
+      <option value="">Барлығы</option>
+    </select>
+  </div>
+
+  <div id="flashcard-area">
+    <div class="empty-state" id="empty-state" style="display:none;">
+      Әзірге сақталған сөз тіркестері жоқ.<br>
+      Кітап оқу барысында сөз тіркестерін осында сақтай аласыз.
+    </div>
+
+    <div id="flashcard-deck" style="display:none;">
+      <div class="flashcard" id="flashcard">
+        <div class="flashcard-inner" id="flashcard-inner">
+          <div class="flashcard-front">
+            <span class="flashcard-phrase" id="flashcard-phrase"></span>
+            <span class="flashcard-tap-hint">Түсіндірмесі</span>
+          </div>
+          <div class="flashcard-back">
+            <span class="flashcard-note" id="flashcard-note"></span>
+            <span class="flashcard-meta" id="flashcard-meta"></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="flashcard-nav">
+        <button id="fc-prev">←</button>
+        <span id="fc-counter" class="fc-counter"></span>
+        <button id="fc-next">→</button>
+      </div>
+
+      <div class="fc-shuffle-row">
+        <button class="btn-ghost" id="fc-shuffle">Араластыру</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="db.js"></script>
+  <script src="flashcards.js"></script>
+</body>
+</html>

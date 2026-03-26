@@ -6,47 +6,40 @@ const KEYS = {
   currentBook: 'readx_current_book'
 };
 
-// ── Storage Helpers ──
-function loadBooks() {
-  try { return JSON.parse(localStorage.getItem(KEYS.books)) || []; }
+// ── Storage Helpers (IndexedDB-backed) ──
+async function loadBooks() {
+  try { return (await dbGet(KEYS.books)) || []; }
   catch { return []; }
 }
 
-function saveBooks(books) {
-  localStorage.setItem(KEYS.books, JSON.stringify(books));
+async function saveBooks(books) {
+  await dbPut(KEYS.books, books);
 }
 
-function loadPages(bookId) {
-  try { return JSON.parse(localStorage.getItem(KEYS.pages(bookId))) || []; }
+async function loadPages(bookId) {
+  try { return (await dbGet(KEYS.pages(bookId))) || []; }
   catch { return []; }
 }
 
-function savePages(bookId, pages) {
-  try {
-    localStorage.setItem(KEYS.pages(bookId), JSON.stringify(pages));
-  } catch (e) {
-    if (e.name === 'QuotaExceededError') {
-      alert('Бос орын қалмады. Орын босату үшін басқа кітаптарды алып тастаңыз.');
-    }
-    throw e;
-  }
+async function savePages(bookId, pages) {
+  await dbPut(KEYS.pages(bookId), pages);
 }
 
-function loadPhrases() {
-  try { return JSON.parse(localStorage.getItem(KEYS.phrases)) || []; }
+async function loadPhrases() {
+  try { return (await dbGet(KEYS.phrases)) || []; }
   catch { return []; }
 }
 
-function savePhrases(phrases) {
-  localStorage.setItem(KEYS.phrases, JSON.stringify(phrases));
+async function savePhrases(phrases) {
+  await dbPut(KEYS.phrases, phrases);
 }
 
-function deleteBook(bookId) {
-  const books = loadBooks().filter(b => b.id !== bookId);
-  saveBooks(books);
-  localStorage.removeItem(KEYS.pages(bookId));
-  const phrases = loadPhrases().filter(p => p.bookId !== bookId);
-  savePhrases(phrases);
+async function deleteBook(bookId) {
+  const books = (await loadBooks()).filter(b => b.id !== bookId);
+  await saveBooks(books);
+  await dbDelete(KEYS.pages(bookId));
+  const phrases = (await loadPhrases()).filter(p => p.bookId !== bookId);
+  await savePhrases(phrases);
 }
 
 function generateId() {
@@ -105,9 +98,7 @@ async function parsePDF(file, onProgress) {
       text += item.str;
       lastY = item.transform[5];
     }
-    // Strip isolated page numbers (a line that is just a number)
     text = text.replace(/^\s*\d+\s*$/gm, '').trim();
-    // Skip mostly-empty pages (less than 50 chars of content)
     if (text.length < 50 && i > 1 && i < pdf.numPages) {
       if (pages.length > 0) {
         pages[pages.length - 1] += '\n\n' + text;
@@ -145,8 +136,8 @@ function showToast(msg) {
 }
 
 // ── Phrase Count Badge ──
-function updatePhraseCounts() {
-  const count = loadPhrases().length;
+async function updatePhraseCounts() {
+  const count = (await loadPhrases()).length;
   const text = count > 0 ? `Сөз тіркестері → ${count}` : 'Сөз тіркестері →';
   const libBadge = $('#lib-phrase-count');
   const readBadge = $('#reading-phrase-count');
@@ -155,10 +146,10 @@ function updatePhraseCounts() {
 }
 
 // ── Library Rendering ──
-function renderLibrary() {
-  const books = loadBooks();
+async function renderLibrary() {
+  const books = await loadBooks();
   const list = $('#book-list');
-  updatePhraseCounts();
+  await updatePhraseCounts();
 
   if (books.length === 0) {
     showView(uploadScreen);
@@ -195,7 +186,6 @@ function renderLibrary() {
     list.appendChild(li);
   });
 
-  // Event delegation
   list.onclick = (e) => {
     const readBtn = e.target.closest('[data-read]');
     const delBtn = e.target.closest('[data-delete]');
@@ -203,8 +193,7 @@ function renderLibrary() {
     if (delBtn) {
       const book = books.find(b => b.id === delBtn.dataset.delete);
       if (book && confirm(`"${book.title}" кітабын жою керек пе?`)) {
-        deleteBook(delBtn.dataset.delete);
-        renderLibrary();
+        deleteBook(delBtn.dataset.delete).then(renderLibrary);
       }
     }
   };
@@ -214,11 +203,11 @@ function renderLibrary() {
 let currentBookId = null;
 let viewingDayIndex = null;
 
-function openBook(bookId) {
+async function openBook(bookId) {
   currentBookId = bookId;
-  localStorage.setItem(KEYS.currentBook, bookId);
+  await dbPut(KEYS.currentBook, bookId);
 
-  const books = loadBooks();
+  const books = await loadBooks();
   const book = books.find(b => b.id === bookId);
   if (!book) return renderLibrary();
 
@@ -226,20 +215,18 @@ function openBook(bookId) {
   renderReadingView(book, viewingDayIndex);
 }
 
-function renderReadingView(book, dayIndex) {
+async function renderReadingView(book, dayIndex) {
   showView(readingView);
-  updatePhraseCounts();
-  removeSaveButton();
+  await updatePhraseCounts();
+  removeSavePopup();
 
   const chunk = getChunk(book, dayIndex);
-  const pages = loadPages(book.id);
+  const pages = await loadPages(book.id);
   const todayDayIndex = getTodayDayIndex(book);
   const progress = getProgress(book);
 
-  // Header
   $('#reading-book-title').textContent = book.title;
 
-  // Completion
   if (chunk.isFinished) {
     $('#completion-screen').style.display = '';
     $('#pages-container').style.display = 'none';
@@ -254,12 +241,10 @@ function renderReadingView(book, dayIndex) {
   $('#pages-container').style.display = '';
   $('#day-nav').style.display = '';
 
-  // Page range & progress
   $('#reading-page-range').textContent = `Бет ${chunk.startPage + 1}–${chunk.endPage}`;
   $('#reading-progress-fill').style.width = `${progress.percent}%`;
   $('#reading-progress-info').textContent = `${book.totalPages} беттің ${chunk.endPage}-і`;
 
-  // Render pages as plain text paragraphs
   const container = $('#pages-container');
   container.innerHTML = '';
 
@@ -288,10 +273,8 @@ function renderReadingView(book, dayIndex) {
     });
   }
 
-  // Highlight previously saved phrases on this page range
-  highlightSavedPhrases(book.id, chunk.startPage + 1, chunk.endPage);
+  await highlightSavedPhrases(book.id, chunk.startPage + 1, chunk.endPage);
 
-  // Day navigation
   const prevBtn = $('#prev-day');
   const nextBtn = $('#next-day');
   const dayLabel = $('#day-label');
@@ -306,13 +289,13 @@ function renderReadingView(book, dayIndex) {
     dayLabel.textContent = `${diff} күн бұрын`;
   }
 
-  // Scroll to top
   window.scrollTo(0, 0);
 }
 
 // ── Highlight saved phrases in the rendered text ──
-function highlightSavedPhrases(bookId, startPage, endPage) {
-  const phrases = loadPhrases().filter(p =>
+async function highlightSavedPhrases(bookId, startPage, endPage) {
+  const allPhrases = await loadPhrases();
+  const phrases = allPhrases.filter(p =>
     p.bookId === bookId && p.page >= startPage && p.page <= endPage
   );
   if (phrases.length === 0) return;
@@ -324,35 +307,33 @@ function highlightSavedPhrases(bookId, startPage, endPage) {
     if (relevantPhrases.length === 0) return;
 
     let html = escapeHtml(div.textContent);
-    // Sort by length descending to avoid partial matches overwriting longer ones
     relevantPhrases.sort((a, b) => b.phrase.length - a.phrase.length);
     for (const p of relevantPhrases) {
       const escaped = escapeHtml(p.phrase).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       const regex = new RegExp(escaped, 'g');
-      html = html.replace(regex, `<mark class="saved-phrase">$&</mark>`);
+      html = html.replace(regex, `<mark class="saved-phrase" title="${escapeHtml(p.note || '')}">$&</mark>`);
     }
     div.innerHTML = html;
   });
 }
 
-// ── Phrase Selection & Save ──
-let saveBtn = null;
+// ── Save Popup (phrase + note) ──
+let savePopup = null;
 
-function removeSaveButton() {
-  if (saveBtn) {
-    saveBtn.remove();
-    saveBtn = null;
+function removeSavePopup() {
+  if (savePopup) {
+    savePopup.remove();
+    savePopup = null;
   }
 }
 
 document.addEventListener('mouseup', (e) => {
-  // Small delay to let selection settle
   setTimeout(() => handleSelection(e), 10);
 });
 
 document.addEventListener('mousedown', (e) => {
-  if (saveBtn && !saveBtn.contains(e.target)) {
-    removeSaveButton();
+  if (savePopup && !savePopup.contains(e.target)) {
+    removeSavePopup();
   }
 });
 
@@ -360,11 +341,8 @@ function handleSelection(e) {
   const sel = window.getSelection();
   const text = sel ? sel.toString().trim() : '';
 
-  if (!text || text.length < 2) {
-    return;
-  }
+  if (!text || text.length < 2) return;
 
-  // Check if selection is within the pages container
   const container = $('#pages-container');
   if (!container) return;
 
@@ -372,52 +350,71 @@ function handleSelection(e) {
   const focus = sel.focusNode;
   if (!container.contains(anchor) || !container.contains(focus)) return;
 
-  // Find the page number from the nearest paragraph
   const paragraph = anchor.nodeType === 3
     ? anchor.parentElement.closest('.paragraph')
     : anchor.closest('.paragraph');
   const page = paragraph ? parseInt(paragraph.dataset.page) : null;
 
-  // Position the save button near the selection
-  removeSaveButton();
+  removeSavePopup();
   const range = sel.getRangeAt(0);
   const rect = range.getBoundingClientRect();
 
-  saveBtn = document.createElement('button');
-  saveBtn.className = 'save-phrase-btn';
-  saveBtn.textContent = '✓ Сақтау';
-  saveBtn.style.left = `${rect.left + window.scrollX + rect.width / 2 - 40}px`;
-  saveBtn.style.top = `${rect.top + window.scrollY - 35}px`;
-  document.body.appendChild(saveBtn);
+  savePopup = document.createElement('div');
+  savePopup.className = 'save-popup';
+  savePopup.innerHTML = `
+    <input class="save-popup-note" type="text" placeholder="Түсіндірме" autocomplete="off">
+    <button class="save-popup-btn">✓ Сақтау</button>
+  `;
 
-  saveBtn.addEventListener('click', () => {
-    const books = loadBooks();
+  const popupWidth = 260;
+  let left = rect.left + window.scrollX + rect.width / 2 - popupWidth / 2;
+  left = Math.max(8, Math.min(left, document.body.clientWidth - popupWidth - 8));
+  const top = rect.top + window.scrollY - 62;
+
+  savePopup.style.left = `${left}px`;
+  savePopup.style.top = `${top}px`;
+  document.body.appendChild(savePopup);
+
+  // Focus the note input
+  const noteInput = savePopup.querySelector('.save-popup-note');
+  const btn = savePopup.querySelector('.save-popup-btn');
+  noteInput.focus();
+
+  const doSave = async () => {
+    const note = noteInput.value.trim();
+    const books = await loadBooks();
     const book = books.find(b => b.id === currentBookId);
     if (!book) return;
 
-    const phrases = loadPhrases();
+    const phrases = await loadPhrases();
     phrases.push({
       phrase: text,
       bookId: currentBookId,
       bookTitle: book.title,
       page: page,
-      savedAt: new Date().toISOString()
+      savedAt: new Date().toISOString(),
+      note: note
     });
-    savePhrases(phrases);
-    updatePhraseCounts();
+    await savePhrases(phrases);
+    await updatePhraseCounts();
 
-    // Highlight the just-saved phrase
     if (paragraph) {
       let html = paragraph.innerHTML;
       const escaped = escapeHtml(text).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       const regex = new RegExp(escaped, 'g');
-      html = html.replace(regex, `<mark class="saved-phrase">$&</mark>`);
+      html = html.replace(regex, `<mark class="saved-phrase" title="${escapeHtml(note)}">$&</mark>`);
       paragraph.innerHTML = html;
     }
 
     sel.removeAllRanges();
-    removeSaveButton();
+    removeSavePopup();
     showToast(`✓ сақталды`);
+  };
+
+  btn.addEventListener('click', doSave);
+  noteInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') doSave();
+    if (e.key === 'Escape') removeSavePopup();
   });
 }
 
@@ -425,16 +422,16 @@ function handleSelection(e) {
 $('#back-to-library').addEventListener('click', renderLibrary);
 $('#completion-back').addEventListener('click', renderLibrary);
 
-$('#prev-day').addEventListener('click', () => {
+$('#prev-day').addEventListener('click', async () => {
   if (viewingDayIndex > 0) {
     viewingDayIndex--;
-    const book = loadBooks().find(b => b.id === currentBookId);
+    const book = (await loadBooks()).find(b => b.id === currentBookId);
     if (book) renderReadingView(book, viewingDayIndex);
   }
 });
 
-$('#next-day').addEventListener('click', () => {
-  const book = loadBooks().find(b => b.id === currentBookId);
+$('#next-day').addEventListener('click', async () => {
+  const book = (await loadBooks()).find(b => b.id === currentBookId);
   if (!book) return;
   const todayDayIndex = getTodayDayIndex(book);
   if (viewingDayIndex < todayDayIndex) {
@@ -475,14 +472,14 @@ async function handleInitialUpload(file) {
       startDate: new Date().toISOString().slice(0, 10),
       pagesPerDay: 5
     };
-    const books = loadBooks();
+    const books = await loadBooks();
     books.push(book);
-    saveBooks(books);
-    savePages(id, pages);
+    await saveBooks(books);
+    await savePages(id, pages);
     renderLibrary();
   } catch (err) {
     console.error('PDF parsing failed:', err);
-    alert('PDF файлын оқу мүмкін болмады.');
+    alert('PDF файлын оқу барысында қате шықты.');
     showView(uploadScreen);
   }
 }
@@ -534,7 +531,7 @@ $('#file-input-modal').addEventListener('change', async (e) => {
   }
 });
 
-$('#modal-save').addEventListener('click', () => {
+$('#modal-save').addEventListener('click', async () => {
   if (!pendingParsedData) return;
 
   const title = $('#modal-title').value.trim() || pendingParsedData.title;
@@ -549,14 +546,10 @@ $('#modal-save').addEventListener('click', () => {
     pagesPerDay: Math.max(1, Math.min(50, ppd))
   };
 
-  try {
-    const books = loadBooks();
-    books.push(book);
-    saveBooks(books);
-    savePages(id, pendingParsedData.pages);
-  } catch {
-    return; // QuotaExceededError already alerted in savePages
-  }
+  const books = await loadBooks();
+  books.push(book);
+  await saveBooks(books);
+  await savePages(id, pendingParsedData.pages);
 
   pendingParsedData = null;
   uploadModal.style.display = 'none';
@@ -579,6 +572,63 @@ modalDropZone.addEventListener('drop', (e) => {
   }
 });
 
+// ── Export / Import ──
+$('#export-btn').addEventListener('click', async () => {
+  const books = await loadBooks();
+  const phrases = await loadPhrases();
+  const pagesData = {};
+  for (const book of books) {
+    pagesData[book.id] = await loadPages(book.id);
+  }
+
+  const data = { books, phrases, pages: pagesData, exportedAt: new Date().toISOString() };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `readx-backup-${new Date().toISOString().slice(0, 10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('✓ Экспортталды');
+});
+
+$('#import-input').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  try {
+    const text = await file.text();
+    const data = JSON.parse(text);
+    if (!data.books || !data.phrases) throw new Error('Invalid format');
+
+    if (!confirm('Бар деректерді ауыстыру керек пе? Бар кітаптар жойылады.')) {
+      e.target.value = '';
+      return;
+    }
+
+    // Clear existing pages
+    const existingBooks = await loadBooks();
+    for (const book of existingBooks) {
+      await dbDelete(KEYS.pages(book.id));
+    }
+
+    await saveBooks(data.books);
+    await savePhrases(data.phrases);
+    if (data.pages) {
+      for (const [bookId, pages] of Object.entries(data.pages)) {
+        await savePages(bookId, pages);
+      }
+    }
+
+    e.target.value = '';
+    showToast('✓ Сөздік қосылды');
+    renderLibrary();
+  } catch (err) {
+    console.error('Import failed:', err);
+    alert('Файлды оқу барысында қате шықты.');
+    e.target.value = '';
+  }
+});
+
 // ── Utility ──
 function escapeHtml(str) {
   const div = document.createElement('div');
@@ -587,8 +637,9 @@ function escapeHtml(str) {
 }
 
 // ── Init ──
-function init() {
-  const books = loadBooks();
+async function init() {
+  await migrateFromLocalStorage();
+  const books = await loadBooks();
   if (books.length === 0) {
     showView(uploadScreen);
   } else {

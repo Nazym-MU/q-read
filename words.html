@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Сөздік — ReadX</title>
+  <title>Сөздік — Q-Read</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500&family=Noto+Serif:wght@400;500&display=swap" rel="stylesheet">
@@ -13,7 +13,10 @@
 
   <div class="words-header">
     <h1>Сөз тіркестері</h1>
-    <a href="index.html">← Кітапхана</a>
+    <div class="words-header-links">
+      <a href="flashcards.html">Флэшкарталар →</a>
+      <a href="index.html">← Кітапхана</a>
+    </div>
   </div>
 
   <div class="words-count" id="phrases-count"></div>
@@ -31,6 +34,7 @@
     Кітап оқу барысында ұнаған сөз тіркесін белгілеп осында сақтай аласыз.
   </div>
 
+  <script src="db.js"></script>
   <script src="words.js"></script>
 </body>
 </html>

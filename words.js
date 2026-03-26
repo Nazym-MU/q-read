@@ -1,16 +1,16 @@
-// ── Storage ──
-function loadBooks() {
-  try { return JSON.parse(localStorage.getItem('readx_books')) || []; }
+// ── Storage (db.js is loaded before this script) ──
+async function loadBooks() {
+  try { return (await dbGet('readx_books')) || []; }
   catch { return []; }
 }
 
-function loadPhrases() {
-  try { return JSON.parse(localStorage.getItem('readx_phrases')) || []; }
+async function loadPhrases() {
+  try { return (await dbGet('readx_phrases')) || []; }
   catch { return []; }
 }
 
-function savePhrases(phrases) {
-  localStorage.setItem('readx_phrases', JSON.stringify(phrases));
+async function savePhrases(phrases) {
+  await dbPut('readx_phrases', phrases);
 }
 
 // ── Kazakh month names ──
@@ -24,12 +24,17 @@ function formatDate(isoString) {
   return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
 }
 
-// ── Rendering ──
-function render(filterBookId) {
-  let phrases = loadPhrases();
-  const books = loadBooks();
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str || '';
+  return div.innerHTML;
+}
 
-  // Populate filter dropdown
+// ── Rendering ──
+async function render(filterBookId) {
+  let phrases = await loadPhrases();
+  const books = await loadBooks();
+
   const filterEl = document.getElementById('phrases-filter');
   const selectEl = document.getElementById('book-filter');
 
@@ -48,15 +53,12 @@ function render(filterBookId) {
     filterEl.style.display = 'none';
   }
 
-  // Filter
   if (filterBookId) {
     phrases = phrases.filter(p => p.bookId === filterBookId);
   }
 
-  // Sort newest first
   phrases.sort((a, b) => new Date(b.savedAt) - new Date(a.savedAt));
 
-  // Count
   const countEl = document.getElementById('phrases-count');
   countEl.textContent = `Сөз тіркестер саны: ${phrases.length}`;
 
@@ -75,11 +77,16 @@ function render(filterBookId) {
   phrases.forEach((p, idx) => {
     const entry = document.createElement('div');
     entry.className = 'phrase-entry';
+    entry.dataset.idx = idx;
     entry.innerHTML = `
       <div class="phrase-entry-header">
         <span class="phrase-entry-text">${escapeHtml(p.phrase)}</span>
-        <button class="phrase-entry-delete" data-idx="${idx}">жою</button>
+        <div class="phrase-entry-actions">
+          <button class="phrase-entry-edit" data-idx="${idx}">өңдеу</button>
+          <button class="phrase-entry-delete" data-idx="${idx}">жою</button>
+        </div>
       </div>
+      ${p.note ? `<div class="phrase-entry-note">${escapeHtml(p.note)}</div>` : ''}
       <div class="phrase-entry-meta">
         ${escapeHtml(p.bookTitle || '')}${p.page ? ` &bull; ${p.page}-бет` : ''} &bull; ${formatDate(p.savedAt)}
       </div>
@@ -93,40 +100,88 @@ document.getElementById('book-filter').addEventListener('change', (e) => {
   render(e.target.value);
 });
 
-document.getElementById('phrases-list').addEventListener('click', (e) => {
-  const btn = e.target.closest('.phrase-entry-delete');
-  if (!btn) return;
-
+document.getElementById('phrases-list').addEventListener('click', async (e) => {
   const filterBookId = document.getElementById('book-filter').value;
-  let phrases = loadPhrases();
 
-  // Find the actual phrase in the full list
-  let filtered = filterBookId ? phrases.filter(p => p.bookId === filterBookId) : [...phrases];
-  filtered.sort((a, b) => new Date(b.savedAt) - new Date(a.savedAt));
+  // Delete
+  const delBtn = e.target.closest('.phrase-entry-delete');
+  if (delBtn) {
+    let phrases = await loadPhrases();
+    let filtered = filterBookId ? phrases.filter(p => p.bookId === filterBookId) : [...phrases];
+    filtered.sort((a, b) => new Date(b.savedAt) - new Date(a.savedAt));
 
-  const idx = parseInt(btn.dataset.idx);
-  const phraseToRemove = filtered[idx];
-  if (!phraseToRemove) return;
+    const idx = parseInt(delBtn.dataset.idx);
+    const phraseToRemove = filtered[idx];
+    if (!phraseToRemove) return;
 
-  // Remove from full list
-  const fullIdx = phrases.findIndex(p =>
-    p.phrase === phraseToRemove.phrase &&
-    p.bookId === phraseToRemove.bookId &&
-    p.page === phraseToRemove.page &&
-    p.savedAt === phraseToRemove.savedAt
-  );
+    const fullIdx = phrases.findIndex(p =>
+      p.phrase === phraseToRemove.phrase &&
+      p.bookId === phraseToRemove.bookId &&
+      p.page === phraseToRemove.page &&
+      p.savedAt === phraseToRemove.savedAt
+    );
 
-  if (fullIdx !== -1) {
-    phrases.splice(fullIdx, 1);
-    savePhrases(phrases);
-    render(filterBookId);
+    if (fullIdx !== -1) {
+      phrases.splice(fullIdx, 1);
+      await savePhrases(phrases);
+      render(filterBookId);
+    }
+    return;
+  }
+
+  // Edit
+  const editBtn = e.target.closest('.phrase-entry-edit');
+  if (editBtn) {
+    const idx = parseInt(editBtn.dataset.idx);
+    let phrases = await loadPhrases();
+    let filtered = filterBookId ? phrases.filter(p => p.bookId === filterBookId) : [...phrases];
+    filtered.sort((a, b) => new Date(b.savedAt) - new Date(a.savedAt));
+    const phraseToEdit = filtered[idx];
+    if (!phraseToEdit) return;
+
+    const entry = editBtn.closest('.phrase-entry');
+    openEditMode(entry, phraseToEdit, phrases, filterBookId);
+    return;
   }
 });
 
-function escapeHtml(str) {
-  const div = document.createElement('div');
-  div.textContent = str;
-  return div.innerHTML;
+function openEditMode(entry, phraseObj, allPhrases, filterBookId) {
+  // Avoid double-opening
+  if (entry.querySelector('.phrase-edit-form')) return;
+
+  entry.innerHTML = `
+    <div class="phrase-edit-form">
+      <label class="phrase-edit-label">Сөз тіркес</label>
+      <input class="phrase-edit-text" type="text" value="${escapeHtml(phraseObj.phrase)}" autocomplete="off">
+      <label class="phrase-edit-label">Түсіндірме</label>
+      <input class="phrase-edit-note" type="text" value="${escapeHtml(phraseObj.note || '')}" placeholder="Түсіндірме қосыңыз" autocomplete="off">
+      <div class="phrase-edit-actions">
+        <button class="phrase-edit-save btn">Сақтау</button>
+        <button class="phrase-edit-cancel btn-ghost">Болдырмау</button>
+      </div>
+    </div>
+  `;
+
+  entry.querySelector('.phrase-edit-cancel').addEventListener('click', () => render(filterBookId));
+
+  entry.querySelector('.phrase-edit-save').addEventListener('click', async () => {
+    const newPhrase = entry.querySelector('.phrase-edit-text').value.trim();
+    const newNote = entry.querySelector('.phrase-edit-note').value.trim();
+    if (!newPhrase) return;
+
+    const fullIdx = allPhrases.findIndex(p =>
+      p.phrase === phraseObj.phrase &&
+      p.bookId === phraseObj.bookId &&
+      p.page === phraseObj.page &&
+      p.savedAt === phraseObj.savedAt
+    );
+
+    if (fullIdx !== -1) {
+      allPhrases[fullIdx] = { ...allPhrases[fullIdx], phrase: newPhrase, note: newNote };
+      await savePhrases(allPhrases);
+    }
+    render(filterBookId);
+  });
 }
 
 // ── Init ──

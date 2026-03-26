@@ -1,4 +1,4 @@
-# ReadX
+# Q-Read
 
 A personal daily reading tracker for PDF books in Kazakh. Upload a PDF, read 5 pages per day, and save words you want to remember — all from a single HTML file with no server required.
 

@@ -208,9 +208,12 @@ a:hover {
 
 .btn-ghost {
   background: none;
+  border: none;
   color: var(--muted);
   padding: 0.35rem 0.5rem;
   font-size: 0.8rem;
+  font-family: var(--font-ui);
+  cursor: pointer;
 }
 
 .btn-ghost:hover {
@@ -325,22 +328,50 @@ a:hover {
 }
 
 /* Save phrase popup */
-.save-phrase-btn {
+.save-popup {
   position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: var(--bg);
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  padding: 0.4rem 0.5rem;
+  z-index: 10;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.save-popup-note {
+  font-family: var(--font-ui);
+  font-size: 0.8rem;
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  padding: 0.25rem 0.5rem;
+  background: white;
+  color: var(--text);
+  outline: none;
+  width: 160px;
+}
+
+.save-popup-note:focus {
+  border-color: var(--progress);
+}
+
+.save-popup-btn {
   background: var(--progress);
   color: white;
   border: none;
   border-radius: 4px;
-  padding: 0.35rem 0.75rem;
+  padding: 0.3rem 0.65rem;
   font-family: var(--font-ui);
   font-size: 0.8rem;
   cursor: pointer;
-  z-index: 10;
   white-space: nowrap;
   transition: opacity 0.15s;
+  flex-shrink: 0;
 }
 
-.save-phrase-btn:hover {
+.save-popup-btn:hover {
   opacity: 0.85;
 }
 
@@ -554,7 +585,14 @@ a:hover {
   line-height: 1.5;
 }
 
-.phrase-entry-delete {
+.phrase-entry-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.phrase-entry-delete,
+.phrase-entry-edit {
   background: none;
   border: none;
   color: var(--muted);
@@ -562,11 +600,18 @@ a:hover {
   cursor: pointer;
   padding: 0;
   font-family: var(--font-ui);
-  flex-shrink: 0;
 }
 
-.phrase-entry-delete:hover {
+.phrase-entry-delete:hover,
+.phrase-entry-edit:hover {
   color: var(--text);
+}
+
+.phrase-entry-note {
+  font-size: 0.85rem;
+  color: var(--text);
+  margin-top: 0.3rem;
+  font-style: italic;
 }
 
 .phrase-entry-meta {
@@ -575,10 +620,153 @@ a:hover {
   margin-top: 0.3rem;
 }
 
+/* Inline edit form */
+.phrase-edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.phrase-edit-label {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.phrase-edit-text,
+.phrase-edit-note {
+  font-family: var(--font-ui);
+  font-size: 0.9rem;
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  padding: 0.4rem 0.5rem;
+  background: white;
+  color: var(--text);
+  outline: none;
+  width: 100%;
+}
+
+.phrase-edit-text:focus,
+.phrase-edit-note:focus {
+  border-color: var(--progress);
+}
+
+.phrase-edit-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+
 .empty-state {
   text-align: center;
   padding: 3rem 1rem;
   color: var(--muted);
   font-size: 0.95rem;
   line-height: 1.6;
+}
+
+/* Words header links */
+.words-header-links {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+/* ── Flashcard styles ── */
+.flashcard {
+  perspective: 1000px;
+  cursor: pointer;
+  margin: 2rem 0 1.5rem;
+  user-select: none;
+}
+
+.flashcard-inner {
+  position: relative;
+  width: 100%;
+  min-height: 220px;
+  transition: transform 0.45s ease;
+  transform-style: preserve-3d;
+}
+
+.flashcard-inner.flipped {
+  transform: rotateY(180deg);
+}
+
+.flashcard-front,
+.flashcard-back {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  border: 1px solid var(--accent);
+  border-radius: 10px;
+  padding: 2.5rem 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  background: var(--bg);
+  min-height: 220px;
+}
+
+.flashcard-back {
+  transform: rotateY(180deg);
+}
+
+.flashcard-phrase {
+  font-family: var(--font-reading);
+  font-size: 1.4rem;
+  color: var(--text);
+  line-height: 1.5;
+}
+
+.flashcard-tap-hint {
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin-top: 1.5rem;
+}
+
+.flashcard-note {
+  font-family: var(--font-reading);
+  font-size: 1.1rem;
+  color: var(--text);
+  line-height: 1.6;
+}
+
+.flashcard-meta {
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin-top: 1rem;
+}
+
+.flashcard-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0;
+}
+
+.flashcard-nav button {
+  background: none;
+  border: none;
+  color: var(--link);
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 0.4rem 0.6rem;
+  font-family: var(--font-ui);
+}
+
+.flashcard-nav button:disabled {
+  color: var(--muted);
+  cursor: default;
+}
+
+.fc-counter {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.fc-shuffle-row {
+  text-align: center;
+  margin-top: 0.75rem;
 }
